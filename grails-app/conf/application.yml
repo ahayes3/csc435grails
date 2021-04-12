@@ -93,6 +93,7 @@ management:
 
 ---
 hibernate:
+    allow_update_outside_transaction: true
     cache:
         queries: false
         use_second_level_cache: false
@@ -109,7 +110,7 @@ dataSource:
 environments:
     development:
         dataSource:
-            dbCreate: create-drop
+            dbCreate: none
             driverClassName: com.mysql.cj.jdbc.Driver
             url: 'jdbc:mysql://localhost:3306/characterdb?allowPublicKeyRetrieval=true&useSSL=false'
             username: 'root'

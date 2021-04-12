@@ -1,8 +1,10 @@
 package grails2
 
 class Characterx {
+
+
     static belongsTo = User
-    static hasMany = [clazzes: Clazz,skillProfs:String,toolProfs:String,items:String,features:String,languages:String]
+    static hasMany = [clazzes: Clazz,skillProfs: Skill,toolProfs:Tool,items:Item,features:Feature,languages:Language]
     static hasOne = [name:String, background:String,race:String,str:Integer,dex:Integer,con:Integer,intel: Integer,wis:Integer,cha:Integer,ac:Integer,init:Integer,
                      speed:Integer,maxHp:Integer,user:String]
 
@@ -26,5 +28,8 @@ class Characterx {
         this.init=c.init
         this.speed=c.speed
         this.maxHp=c.maxHp
+    }
+
+    static mapping = {
     }
 }

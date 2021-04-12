@@ -6,6 +6,6 @@ class UserView {
     static def g = new Gson()
 
     static def render(Closure c, User u) {
-        c(g.toJson(u))
+        c(g.toJson(new UserIR(u)))
     }
 }

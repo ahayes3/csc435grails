@@ -14,23 +14,27 @@ class CharacterxController {
         checkLogin()
         println(session["user"])
         Set<Characterx> myChars = Characterx.findAllByUser(session["user"].toString())
-        CharacterView.render(r,myChars)
+-        CharacterView.render(r,myChars)
     }
 
     def getChar() {
         checkLogin()
-        Integer id = params.id
-        def cr = Characterx.findByIdAndUser(id, session["user"] as String)
+        String id = params.id
+        def cr = Characterx.findById(Integer.parseInt(id))
         CharacterView.render(r,cr)
     }
     def delete() {
         checkLogin()
-        Integer id = params.id
-        def cr = Characterx.findByIdAndUser(id, session["user"] as String)
+        String i = params.id
+        if(!i.isInteger()) {
+            throw new CodeException(400,"Bad Request")
+        }
+        Integer id = Integer.parseInt(i)
+        def cr = Characterx.get(id)
         if(cr.user != session["user"]) {
             throw new CodeException(403,"Forbidden")
         }
-        cr.delete()
+        cr.delete(flush:true)
         CharacterView.render(r,cr)
     }
     def update() {
@@ -48,11 +52,55 @@ class CharacterxController {
     }
     def create() {
         checkLogin()
-        def cr = parseChar(request)
-        cr.save()
+        //def cr = parseChar(request)
+
+        String body = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()))
+        Map m = g.fromJson(body,Map.class)["character"]
+        def str= (m["str"] as Double).intValue()
+        def dex = (m["dex"] as Double).intValue()
+        def con= (m["con"] as Double).intValue()
+        def intel= (m["intel"] as Double).intValue()
+        def wis= (m["wis"] as Double).intValue()
+        def cha= (m["cha"] as Double).intValue()
+        def ac=(m["ac"] as Double).intValue()
+        def init= (m["init"] as Double).intValue()
+        def speed= (m["speed"] as Double).intValue()
+        def maxHp= (m["maxHp"] as Double).intValue()
+        def name = m["name"] as String
+        def bg = m["background"] as String
+        def race = m["race"] as String
+        def languages  = makeList("languages",m).stream().map({p -> new Language(name: p)})
+        def features = makeList("features",m).stream().map({p -> new Feature(name: p)})
+        def tools = makeList("tools",m).stream().map({p -> new Tool(name: p)})
+        def skills = makeList("skills",m).stream().map({p -> new Skill(name: p)})
+        def items = makeList("items",m).stream().map({p -> new Item(name: p)})
+        def classes = classes(m)
+
+        def z = new Characterx(name: name,background: bg, race: race, str: str,dex: dex,con: con,intel: intel,wis: wis,cha: cha,ac: ac,init: init,speed: speed, maxHp: maxHp)
+
+
+
+        z.user = session["user"]
         def u = User.findByName(session["user"] as String)
-        u.characters.add(cr)
-        CharacterView.render(r,cr)
+        u.characters.add(z)
+        z.save(failOnError: true)
+
+        tools.forEach({ p -> z.addToToolProfs(p)})
+        languages.forEach({ p -> z.addToLanguages(p) })
+        features.forEach({ p -> z.addToFeatures(p) })
+        skills.forEach({ p -> z.addToSkillProfs(p) })
+        items.forEach({ p -> z.addToItems(p) })
+        classes.forEach({p -> z.addToClazzes(p)})
+        z.save()
+        z.clazzes.forEach({p -> p.save()})
+        z.toolProfs.forEach({p -> p.save()})
+        z.languages.forEach({p -> p.save()})
+        z.features.forEach({p -> p.save()})
+        z.skillProfs.forEach({p -> p.save()})
+        z.items.forEach({p -> p.save()})
+        z.save(flush:true)
+
+        CharacterView.render(r,z)
     }
     private def checkLogin() {
         if(session["user"]==null) {
@@ -82,8 +130,10 @@ class CharacterxController {
         def items = makeList("items",m)
         def classes = classes(m)
 
-        return new Characterx(clazzes: classes,skillProfs: skills,toolProfs: tools,items: items,features: features, languages: languages,
+        def z = new Characterx(clazzes: classes,skillProfs: skills,toolProfs: tools,items: items,features: features, languages: languages,
                 name: name,background: bg, race: race, str: str,dex: dex,con: con,intel: intel,wis: wis,cha: cha,ac: ac,init: init,speed: speed, maxHp: maxHp)
+        tools.forEach({ p -> z.addToToolProfs(p) })
+        return z
 
     }
     private Set<Clazz> classes(Map m) {
